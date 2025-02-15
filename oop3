@@ -1,0 +1,137 @@
+import java.sql.*;
+import java.util.Scanner;
+
+public class VehicleRentalSystem {
+    private static final String URL = "jdbc:postgresql://localhost:5432/vehicle_rental";
+    private static final String USER = "postgres";
+    private static final String PASSWORD = "1234";
+
+    private Connection conn;
+    private Scanner scanner;
+
+    public VehicleRentalSystem() {
+        try {
+            conn = DriverManager.getConnection(URL, USER, PASSWORD);
+            scanner = new Scanner(System.in);
+            System.out.println("Database connected successfully!");
+        } catch (SQLException e) {
+            System.err.println("Database connection failed: " + e.getMessage());
+            System.exit(1);
+        }
+    }
+
+    private void createVehicle() {
+        System.out.print("Enter vehicle model: ");
+        String model = scanner.nextLine();
+        System.out.print("Enter vehicle brand: ");
+        String brand = scanner.nextLine();
+        System.out.print("Enter manufacturing year: ");
+        int year = scanner.nextInt();
+        scanner.nextLine(); // Consume newline
+
+        String sql = "INSERT INTO vehicle (model, brand, year) VALUES (?, ?, ?)";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, model);
+            stmt.setString(2, brand);
+            stmt.setInt(3, year);
+            stmt.executeUpdate();
+            System.out.println("Vehicle added successfully!");
+        } catch (SQLException e) {
+            System.err.println("Error inserting vehicle: " + e.getMessage());
+        }
+    }
+
+    private void displayVehicles() {
+        String sql = "SELECT * FROM vehicle";
+        try (Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            System.out.println("\nList of Vehicles:");
+            while (rs.next()) {
+                System.out.printf("ID: %d, Model: %s, Brand: %s, Year: %d\n",
+                        rs.getInt("id"), rs.getString("model"), rs.getString("brand"), rs.getInt("year"));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving vehicles: " + e.getMessage());
+        }
+    }
+
+    private void updateVehicle() {
+        System.out.print("Enter vehicle ID to update: ");
+        int id = scanner.nextInt();
+        scanner.nextLine();
+        System.out.print("Enter new model: ");
+        String model = scanner.nextLine();
+        System.out.print("Enter new brand: ");
+        String brand = scanner.nextLine();
+        System.out.print("Enter new year: ");
+        int year = scanner.nextInt();
+        scanner.nextLine();
+
+        String sql = "UPDATE vehicle SET model = ?, brand = ?, year = ? WHERE id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, model);
+            stmt.setString(2, brand);
+            stmt.setInt(3, year);
+            stmt.setInt(4, id);
+            int updated = stmt.executeUpdate();
+            if (updated > 0) {
+                System.out.println("Vehicle updated successfully!");
+            } else {
+                System.out.println("Vehicle ID not found.");
+            }
+        } catch (SQLException e) {
+            System.err.println("Error updating vehicle: " + e.getMessage());
+        }
+    }
+
+    private void deleteVehicle() {
+        System.out.print("Enter vehicle ID to delete: ");
+        int id = scanner.nextInt();
+        scanner.nextLine();
+
+        String sql = "DELETE FROM vehicle WHERE id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            int deleted = stmt.executeUpdate();
+            if (deleted > 0) {
+                System.out.println("Vehicle deleted successfully!");
+            } else {
+                System.out.println("Vehicle ID not found.");
+            }
+        } catch (SQLException e) {
+            System.err.println("Error deleting vehicle: " + e.getMessage());
+        }
+    }
+
+    private void mainMenu() {
+        while (true) {
+            System.out.println("\n--- Vehicle Rental System ---");
+            System.out.println("1. Add Vehicle");
+            System.out.println("2. View Vehicles");
+            System.out.println("3. Update Vehicle");
+            System.out.println("4. Delete Vehicle");
+            System.out.println("5. Exit");
+            System.out.print("Choose an option: ");
+
+            int choice = scanner.nextInt();
+            scanner.nextLine(); // Consume newline
+
+            switch (choice) {
+                case 1 -> createVehicle();
+                case 2 -> displayVehicles();
+                case 3 -> updateVehicle();
+                case 4 -> deleteVehicle();
+                case 5 -> {
+                    System.out.println("Exiting... Goodbye!");
+                    return;
+                }
+                default -> System.out.println("Invalid option. Please try again.");
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        VehicleRentalSystem system = new VehicleRentalSystem();
+        system.mainMenu();
+    }
+}
